@@ -6,43 +6,42 @@ namespace ConfigMigrate
     using System.Collections.Generic;
     using System.Data.SqlClient;
     using System.IO;
-
+    using System.Linq;
+    
     using Z.Core.Extensions;
 
     public static class Utils
     {
         public static void ExecuteSqlScriptFiles(this SqlConnection connection, params string[] sqlScriptFiles)
         {
-            foreach (string scriptCommand in GetScriptCommands(sqlScriptFiles))
+            var list = GetScriptCommands(sqlScriptFiles).ToList();
+            foreach (string scriptCommand in list)
             {
                 using (SqlCommand sqlCommand = connection.CreateCommand())
                 {
                     sqlCommand.CommandText = scriptCommand;
                     sqlCommand.CommandTimeout = 300;
-                    bool flag = true;
+                    bool isExecuted = false;
                     int num = 5;
-                    while (true)
+                    while (num > 0)
                     {
-                        if (!flag)
+                        if (isExecuted)
                         {
-                            return;
+                            continue;
                         }
 
-                        if (num == 0)
-                        {
-                            break;
-                        }
-
-                        flag = false;
                         try
                         {
                             sqlCommand.ExecuteNonQuery();
+                            Console.WriteLine($"Executed {scriptCommand}");
+                            num = 0;
+                            isExecuted = true;
                         }
                         catch (SqlException ex)
                         {
                             if (ex.Number == 1205)
                             {
-                                flag = true;
+                                isExecuted = true;
                                 num--;
                             }
                             else if (ex.Errors[0].Number != 2714)
@@ -52,7 +51,10 @@ namespace ConfigMigrate
                         }
                     }
 
-                    throw new Exception("All retries over");
+                    if (!isExecuted)
+                    {
+                        throw new Exception("All retries over");
+                    }
                 }
             }
         }

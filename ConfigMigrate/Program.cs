@@ -66,7 +66,7 @@ namespace ConfigMigrate
             var list = GetResults(Properties.Settings.Default.DbConnectionString);
             entries.AddRange(list);
             var dict = list.OrderBy(x => x.ConfigEntryKey).ToDictionary(x => x.ConfigEntryKey, x => x);
-            File.WriteAllText(output, JsonConvert.SerializeObject(dict));
+            File.WriteAllText(output, JsonConvert.SerializeObject(dict.Values));
         }
 
         private static void CleanupTables(string connectionString)
@@ -80,6 +80,16 @@ namespace ConfigMigrate
             using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
+                foreach(var command in commands)
+                {
+                    using(var cmd = connection.CreateCommand())
+                    {
+                        cmd.CommandText = command;
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    Console.WriteLine("Executed command: " + command);
+                }
             }
         }
 
