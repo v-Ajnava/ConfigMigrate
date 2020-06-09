@@ -11,6 +11,7 @@ namespace ConfigMigrate
     using ConfigMigrate.Models;
     using Microsoft.DocAsCode.Glob;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using Z.Core.Extensions;
     using Z.Data.Extensions;
 
@@ -66,7 +67,7 @@ namespace ConfigMigrate
             var list = GetResults(Properties.Settings.Default.DbConnectionString);
             entries.AddRange(list);
             var dict = list.OrderBy(x => x.ConfigEntryKey).ToDictionary(x => x.ConfigEntryKey, x => x);
-            File.WriteAllText(output, JsonConvert.SerializeObject(dict.Values));
+            File.WriteAllText(output, JToken.Parse(JsonConvert.SerializeObject(dict.Values)).ToString(Formatting.Indented));
         }
 
         private static void CleanupTables(string connectionString)
